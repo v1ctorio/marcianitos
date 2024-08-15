@@ -13,18 +13,22 @@ fn main() {
             }),
             ..default()
         }))
+        .insert_resource(Score(0))
         .add_systems(Startup, startup)
         .add_systems(Update, player_movement)
-        .add_systems(Update, handle_input)
+        .add_systems(Update, (change_direction))
         .run();
 }
 
 #[derive(Component)]
 struct Player {
-    x: f32,               // x position
+    y: f32,               // x position
     shooting: bool,       // is the player shooting
     remaining_shots: u32, // how many shots the player has left
 }
+
+#[derive(Resource, Deref, DerefMut)]
+struct Score(usize);
 
 #[derive(Component)]
 enum Direction {
@@ -33,6 +37,10 @@ enum Direction {
     None
 }
 
+#[derive(Component)]
+struct Scoreboard;
+
+
 fn startup(mut commands: Commands, asset_server: Res<AssetServer>) {
     commands.spawn(Camera2dBundle::default());
     commands.spawn((SpriteBundle {
@@ -40,6 +48,33 @@ fn startup(mut commands: Commands, asset_server: Res<AssetServer>) {
         transform: Transform::from_translation(Vec3::new(0.0, 100.0, 0.0)),
         ..default()
     },Direction::Right));
+
+    commands.spawn((
+        Scoreboard,
+        TextBundle::from_sections([
+            TextSection::new(
+                "Score: ",
+                TextStyle {
+                    font_size: 12.0
+                    ,
+                    color: Color::srgb(0.5, 0.5, 1.0),
+                    ..default()
+                },
+            ),
+            TextSection::from_style(TextStyle {
+                font_size: 12.0,
+                color: Color::srgb(1.0, 0.5, 0.5),
+                ..default()
+            }),
+        ])
+        .with_style(Style {
+            position_type: PositionType::Absolute,
+            top: Val::Px(5.0),
+            left: Val::Px(5.0),
+            ..default()
+        }),
+    ));
+
 }
 
 fn player_movement(time: Res<Time>, mut query: Query<(&Direction, &mut Transform)>) {
@@ -56,19 +91,11 @@ fn player_movement(time: Res<Time>, mut query: Query<(&Direction, &mut Transform
     }
 }
 
-// doesnt work xdd 
-fn handle_input(keyboard_input: Res<ButtonInput<KeyCode>>, mut query: Query<(&mut Direction, &mut Player)>) {
-    for (mut direction, mut _player) in &mut query {
+fn change_direction<S:Component>(mut query: Query<(&mut Direction, &mut Transform)>) {
+    
+    let mut direction = query.single_mut().0;
 
-        println!("{:?}", keyboard_input.pressed(KeyCode::ArrowLeft));
+    direction = Mut::new(Direction::Right);
 
-        if keyboard_input.pressed(KeyCode::ArrowLeft) {
-            *direction = Direction::Left;
-        } else if keyboard_input.pressed(KeyCode::ArrowRight) {
-            *direction = Direction::Right;
-        } else {
-            *direction = Direction::None;   
-        }
-    }
+
 }
-
