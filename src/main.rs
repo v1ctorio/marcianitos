@@ -1,4 +1,7 @@
-use bevy::{prelude::*, window::WindowTheme};
+use bevy::{input::keyboard::KeyboardInput, prelude::*, window::WindowTheme};
+
+
+const MOVEMENT_SPEED: f32 = 100.0;
 
 fn main() {
     App::new()
@@ -12,6 +15,7 @@ fn main() {
         }))
         .add_systems(Startup, startup)
         .add_systems(Update, player_movement)
+        .add_systems(Update, handle_input)
         .run();
 }
 
@@ -39,16 +43,32 @@ fn startup(mut commands: Commands, asset_server: Res<AssetServer>) {
 }
 
 fn player_movement(time: Res<Time>, mut query: Query<(&Direction, &mut Transform)>) {
-    for (direction, mut transform) in query.iter_mut() {
-        match direction {
+    for (direction, mut transform) in &mut query {
+        match *direction {
             Direction::Left => {
-                transform.translation.x -= time.delta_seconds();
+                transform.translation.x -= MOVEMENT_SPEED * time.delta_seconds();
             }
             Direction::Right => {
-                transform.translation.x += time.delta_seconds();
+                transform.translation.x += MOVEMENT_SPEED * time.delta_seconds();
             }
             _ => {}
         }
     }
 }
-//fn add_player(mut commands: Commands) {}
+
+// doesnt work xdd 
+fn handle_input(keyboard_input: Res<ButtonInput<KeyCode>>, mut query: Query<(&mut Direction, &mut Player)>) {
+    for (mut direction, mut _player) in &mut query {
+
+        println!("{:?}", keyboard_input.pressed(KeyCode::ArrowLeft));
+
+        if keyboard_input.pressed(KeyCode::ArrowLeft) {
+            *direction = Direction::Left;
+        } else if keyboard_input.pressed(KeyCode::ArrowRight) {
+            *direction = Direction::Right;
+        } else {
+            *direction = Direction::None;   
+        }
+    }
+}
+
